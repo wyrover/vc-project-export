@@ -10,4 +10,4 @@ cscript.exe vc2005-export.vbs "×××××.vcproj" "E:\111\src\test\×××××\"
 ## 技术点:
 
 - vbscript include 文件
-- vbscirpt 回调函数
+- vbscirpt 回调函数   (类似于boost.bind)

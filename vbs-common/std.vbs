@@ -156,6 +156,11 @@ Const CAPICOM_HASH_ALGORITHM_SHA384 = 5
 Const CAPICOM_HASH_ALGORITHM_SHA512 = 6
 
 '------------------------------------------------
+' IE
+Const OLECMDID_SAVE = 3
+Const OLECMDEXECOPT_DODEFAULT = 0
+
+'------------------------------------------------
 ' Base64
 Const sBASE_64_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"  
 
@@ -616,6 +621,90 @@ Function WriteTextFile(filename, byval Str, charset)
 End Function 
 
 '------------------------------------------------
+' 读文本文件
+Function pvReadFile(sFile)    
+    Dim sPrefix
+    
+    With CreateObject(COM_FSO)
+        sPrefix = .OpenTextFile(sFile, ForReading, False, False).Read(3)
+    End With
+    If Left(sPrefix, 3) <> Chr(&HEF) & Chr(&HBB) & Chr(&HBF) Then
+        With CreateObject(COM_FSO)
+            pvReadFile = .OpenTextFile(sFile, ForReading, False, Left(sPrefix, 2) = Chr(&HFF) & Chr(&HFE)).ReadAll()
+        End With
+    Else
+        With CreateObject(COM_ADOSTREAM)
+            .Open
+            If Left(sPrefix, 2) = Chr(&HFF) & Chr(&HFE) Then
+                .Charset = "Unicode"
+            ElseIf Left(sPrefix, 3) = Chr(&HEF) & Chr(&HBB) & Chr(&HBF) Then
+                .Charset = "UTF-8"
+            Else
+                .Charset = "_autodetect"
+            End If
+            .LoadFromFile sFile
+            pvReadFile = .ReadText
+        End With
+    End If
+End Function
+
+'------------------------------------------------
+' 写文本文件
+Function pvWriteFile(sFile, sText, lType)    
+    With CreateObject(COM_ADOSTREAM)
+        .Open
+        If lType = 2 Then
+            .Charset = "Unicode"
+        ElseIf lType = 3 Then
+            .Charset = "UTF-8"
+        Else
+            .Charset = "_autodetect"
+        End If
+        .WriteText sText
+        .SaveToFile sFile, adSaveCreateOverWrite
+    End With
+End Function
+
+'------------------------------------------------
+' 写utf-8无BOM文件
+Function WriteUTF8WithoutBOM(filename, content)
+    dim stm:set stm = CreateObject(COM_ADOSTREAM)   
+    stm.Type = 2 '以文本模式读取   
+    stm.mode = 3   
+    stm.charset = "utf-8"  
+    stm.open   
+    stm.Writetext(content)   
+    stm.Position = 3   
+    dim newStream : Set newStream = CreateObject(COM_ADOSTREAM)   
+    With newStream   
+        .Mode = 3   
+        .Type = 1   
+        .Open()   
+    End With  
+    stm.CopyTo(newStream)   
+    newStream.SaveToFile filename, 2   
+    stm.flush   
+    stm.Close   
+    Set stm = Nothing  
+    Set newStream = Nothing  
+End Function
+
+'------------------------------------------------
+' 使用IE保存UTF8无BOM的文件
+Function RemoveUTF8BOM_IE(filename, content)
+    Dim ie : Set ie = CreateObject(COM_IE) 
+    ie.Navigate filename
+    Do While ie.Busy Or ie.ReadyState<>4
+        WScript.Sleep 100
+    Loop
+    If ie.Document.Charset="utf-8" Then 
+        ie.ExecWB OLECMDID_SAVE,OLECMDEXECOPT_DODEFAULT
+    End If
+    ie.Quit
+End Function
+
+
+'------------------------------------------------
 ' 字符串转字节数组
 Function Str2Bytes(str, charset)
     Dim adodbStream, strRet 
@@ -653,6 +742,257 @@ Function BytesToBstr(str, charset)
     adodbStream.Close 
     Set adodbStream = nothing 
 End Function
+
+'------------------------------------------------
+' String2Bytes
+Function String2Bytes(str)
+    Dim k,char,code,bytes
+    For k=1 To Len(str)
+        char=Mid(str,k,1)
+        code=Asc(char)
+        If code<0 Then code=code+256*256
+        If code<256 Then
+            bytes=bytes & ChrB(code)
+        Else
+            bytes=bytes & ChrB(code\256) & ChrB(code Mod 256)
+        End If
+    Next
+    String2Bytes=bytes
+End Function
+
+
+'------------------------------------------------
+' toUTF8
+Function toUTF8 (szInput) 
+    Dim wch, uch, szRet 
+    Dim x 
+    Dim nAsc, nAsc2, nAsc3 
+    'If the input parameter is empty, then exit the function 
+    If szInput = "" Then 
+        toUTF8 = szInput 
+        Exit Function 
+    End If 
+    'Start conversion 
+    For x = 1 To Len (szInput) 
+        'Mid function split GB encoded text 
+        wch = Mid (szInput, x, 1) 
+        'To use AscW function returns a GB encoded text Unicode character code 
+        'Note: The the asc function returns the ANSI character code, note the difference 
+        NASC = AscW (WCH) 
+        If nAsc <0 Then nAsc = nAsc + 65536 
+        
+        If (nAsc And & HFF80) = 0 Then 
+            szRet = szRet & wch 
+        Else 
+            If (nAsc And & HF000) = 0 Then 
+                uch = "%" & Hex (((nAsc / 2 ^ 6)) Or & HC0) & Hex (nAsc And & H3F Or & H80) 
+                szRet = szRet & uch 
+            Else 
+                'GB encoded text Unicode character code in 0800 - FFFF three-byte template 
+                uch = "%" & Hex ((nAsc / 2 ^ 12) Or & HE0) & "%" & _ 
+                Hex ((nAsc / 2 ^ 6) And & H3F Or & H80) & "%" & _ 
+                Hex (nAsc And & H3F Or & H80) 
+                szRet = szRet & uch 
+            End If 
+        End If 
+    Next 
+    
+    toUTF8 = szRet 
+End Function
+
+'------------------------------------------------
+' chinese2unicode
+' GB transfer unicode --- GB encoded text is converted to Unicode encoded text
+Function chinese2unicode(Str) 
+    Dim i 
+    Dim Str_one 
+    Dim Str_unicode 
+    If (IsNull (Str)) Then 
+        Exit Function 
+    End If 
+    For i = 1 To Len (STR) 
+        Str_one = Mid (Str, i, 1) 
+        Str_unicode = Str_unicode & Chr (38) 
+        Str_unicode = Str_unicode & Chr (35) 
+        Str_unicode = Str_unicode & Chr (120) 
+        Str_unicode = Str_unicode & Hex (AscW (Str_one)) 
+        Str_unicode = Str_unicode & Chr (59) 
+    Next 
+    chinese2unicode = Str_unicode 
+End Function
+
+'------------------------------------------------
+' URLDecode
+Function URLDecode (enStr) 
+    Dim deStr 
+    Dim c, i, v 
+    deStr = "" 
+    For i = 1 To Len (enStr) 
+        c = Mid (enStr, i, 1) 
+        If c = "%" Then 
+            v = Eval ("& h" + Mid (enStr, i +1,2)) 
+            If v <128 Then 
+                deStr = deStr & Chr (v) 
+                i = i +1 
+            Else 
+                If isvalidhex (Mid (enstr, i, 3)) Then 
+                    If isvalidhex (Mid (enstr, i +3,3)) Then 
+                        v = Eval ("& h" + Mid (enStr, i +1,2) + Mid (enStr, i +4,2)) 
+                        deStr = deStr & Chr (v) 
+                        i = i +5 
+                    Else 
+                        v = Eval ("& h" + Mid (enStr, i +1,2) + CStr (Hex (Asc (Mid (enStr, i +3,1))))) 
+                        deStr = deStr & Chr (v) 
+                        i = i +3 
+                    End If 
+                Else 
+                    destr = destr & c 
+                End If 
+            End If 
+        Else 
+            If c = "+" Then 
+                deStr = deStr & "" 
+            Else 
+                deStr = deStr & c 
+            End If 
+        End If 
+    Next 
+    URLDecode = deStr 
+End Function
+
+'------------------------------------------------
+' isvalidhex
+' To determine whether a valid hexadecimal code 
+Function isvalidhex (str) 
+    Dim c 
+    isvalidhex = True 
+    str = UCase (str) 
+    If Len (str) <> 3 Then isvalidhex = False: Exit Function 
+    If Left (str, 1) <> "%" Then isvalidhex = False: Exit Function 
+    c = Mid (str, 2,1) 
+    If Not (((c> = "0") And (c <= "9")) Or ((c> = "A") And (c <= "Z"))) Then isvalidhex = False: Exit Function 
+    c = Mid (str, 3,1) 
+    If Not (((c> = "0") And (c <= "9")) Or ((c> = "A") And (c <= "Z"))) Then isvalidhex = False: Exit Function 
+End Function 
+
+
+'------------------------------------------------
+' UTF2GB
+Function UTF2GB (UTFStr)
+    
+    For Dig = 1 To Len (UTFStr) 
+        'If the UTF8 encoded text% at the beginning of the conversion 
+        If Mid (UTFStr, Dig, 1) = "%" Then 
+            'UTF8 encoded text more than eight converted into Chinese characters 
+            If Len (UTFStr)> = Dig +8 Then 
+                GBStr = GBStr & ConvChinese (Mid (UTFStr, Dig, 9)) 
+                Dig = Dig +8 
+            Else 
+                GBStr = GBStr & Mid (UTFStr, Dig, 1) 
+            End If 
+        Else 
+            GBStr = GBStr & Mid (UTFStr, Dig, 1) 
+        End If 
+    Next 
+    UTF2GB = GBStr 
+End Function
+
+'------------------------------------------------
+' ConvChinese
+' UTF8 encoded text will be converted to Chinese characters 
+Function ConvChinese (x) 
+    A = Split (Mid (x, 2), "%") 
+    i = 0 
+    j = 0 
+    For i = 0 To UBound (A) 
+        A (i) = c16to2 (A (i)) 
+    Next 
+    For i = 0 To UBound (A) -1 
+        DigS = InStr (A (i), "0") 
+        Unicode = "" 
+        For j = 1 To DigS-1 
+            If j = 1 Then 
+                A (i) = Right (A (i), Len (A (i))-DIGS) 
+                Unicode = Unicode & A (i) 
+            Else 
+                i = i +1 
+                A (i) = Right (A (i), Len (A (i)) -2) 
+                Unicode = Unicode & A (i) 
+            End If 
+        Next
+        
+        If Len (c2to16 (Unicode)) = 4 Then 
+            ConvChinese = ConvChinese & chrw (Int ("& H" & c2to16 (Unicode))) 
+        Else 
+            ConvChinese = ConvChinese & Chr (Int ("& H" & c2to16 (Unicode))) 
+        End If 
+    Next 
+End Function
+
+'------------------------------------------------
+' c2to16
+' Binary code into hex code 
+Function c2to16 (x) 
+    i = 1 
+    For i = 1 To Len (x) Step 4 
+        c2to16 = c2to16 & Hex (c2to10 (Mid (x, i, 4))) 
+    Next 
+End Function
+
+'------------------------------------------------
+' c2to10
+' Binary code converted to decimal code 
+Function c2to10 (x) 
+    c2to10 = 0 
+    If x = "0" Then Exit Function 
+    i = 0 
+    For i = 0 To Len (x) -1 
+        If Mid (x, Len (x)-i, 1) = "1" Then c2to10 = c2to10 +2 ^ (i) 
+    Next 
+End Function
+
+'------------------------------------------------
+' c16to2
+' Hexadecimal code is converted to binary code 
+Function c16to2 (x) 
+    i = 0 
+    For i = 1 To Len (Trim (x)) 
+        tempstr = c10to2 (CInt (Int ("& h" & Mid (x, i, 1)))) 
+        Do While Len (tempstr) <4 
+            tempstr = "0" & ??tempstr 
+        Loop 
+        c16to2 = c16to2 & tempstr 
+    Next 
+End Function
+
+'------------------------------------------------
+' c10to2
+' Decimal code is converted into a binary code 
+Function c10to2 (x) 
+    mysign = Sgn (x) 
+    x = Abs (x) 
+    DIGS = 1 
+    Do 
+        If x <2 ^ DigS Then 
+            Exit Do 
+        Else 
+            DigS = DigS +1 
+        End If 
+    Loop 
+    tempnum = x
+    
+    i = 0 
+    For i = DigS To 1 Step-1 
+        If tempnum> = 2 ^ (i-1) Then 
+            tempnum = tempnum-2 ^ (i-1) 
+            c10to2 = c10to2 & "1" 
+        Else 
+            c10to2 = c10to2 & "0" 
+        End If 
+    Next 
+    If mysign = -1 Then c10to2 = "-" & c10to2 
+End Function
+
 
 '------------------------------------------------
 ' WriteINIString
@@ -1462,6 +1802,41 @@ Function Base64Decode(str)
 End Function 
 
 '------------------------------------------------
+' ToBase64
+Function ToBase64(Src)
+    Dim BASE64:BASE64="ABCDEFGHIJKLMNOPQRSTUVWXYZ" & _
+    "abcdefghijklmnopqrstuvwxyz" & _
+    "0123456789+/"
+    Dim k
+    Dim Bytes
+    Dim Code
+    Dim Dst
+    
+    ReDim Bytes(LenB(Src))
+    For k=1 To Len(Src)
+        Code=AscW(Mid(Src,k,1))
+        If Code<0 Then Code=Code+256*256
+        Bytes(k*2-1)=Code \ 256
+        Bytes(k*2)=Code Mod 256
+    Next
+    For k=1 To UBound(Bytes) Step 3
+        Dst=Dst & Mid(BASE64,(Bytes(k) \ 4)+1,1)
+        If k+1>UBound(Bytes) Then
+            Dst=Dst & Mid(BASE64,(Bytes(k)*16 Mod 64)+1,1)
+        Else
+            Dst=Dst & Mid(BASE64,(Bytes(k)*16 Mod 64)+(Bytes(k+1) \ 16)+1,1)
+            If k+2>UBound(Bytes) Then
+                Dst=Dst & Mid(BASE64,(Bytes(k+1)*4 Mod 64)+1,1)
+            Else
+                Dst=Dst & Mid(BASE64,(Bytes(k+1)*4 Mod 64)+(Bytes(k+2) \ 64)+1,1)
+                Dst=Dst & Mid(BASE64,(Bytes(k+2) Mod 64)+1,1)
+            End If
+        End If
+    Next
+    ToBase64=Dst
+End Function
+
+'------------------------------------------------
 ' MD5
 Function MD5(str) 
     Dim CAPIHASH
@@ -1503,6 +1878,25 @@ Function SHA1(str)
     SHA1 = CAPIHASH.Value
     Set CAPIHASH = Nothing
 End Function 
+
+
+'------------------------------------------------
+' SplitURL
+Function SplitURL(url, ByRef protocol, ByRef hostname, ByRef port, ByRef pathname, ByRef hash, ByRef search)
+    Set Document = CreateObject(COM_HTML)
+    Document.write "<html><body><a id=a1 /></body></html>"
+    Set Location = Document.body.all.a1
+
+    Location.href = url
+    protocol = Location.protocol
+    hostname = Location.hostname
+    port = Location.port
+    pathname = Location.pathname
+    hash = Location.hash
+    search = Location.search
+End Function 
+
+
 
 '------------------------------------------------
 ' URLEncoding
@@ -3615,6 +4009,50 @@ Class CLogger
 		End If
 	End Sub
 End Class
+
+'------------------------------------------------
+' 单件FSO
+' Example:
+'    Dim x
+'    Dim y
+'    Dim z
+'    Dim a
+'    Dim b
+'    Set x = New Class_FSO
+'    Set y = x.FSO
+'    Set b = x.FSO
+'    Set z = New Class_FSO
+'    Set a = z.FSO
+'    MsgBox CStr(y Is a) & " " & CStr(y Is b) & " " & CStr(a Is b)
+Class Class_FSO
+    Private FSO_
+    
+    Public Property Get FSO
+        On Error Resume Next
+        If TypeName(FSO_) = "FileSystemObject" Then
+            Set FSO = FileSysObj
+        Else
+            ExecuteGlobal "Const Class_FSO_IsRunning = 1"
+            If Err = 0 Then
+                ExecuteGlobal "Set Class_FSO_RunningInstance = Me"
+                Set FSO = CreateObject("Scripting.FileSystemObject")
+                Set FileSysObj = FSO
+            Else
+                Set FSO = Class_FSO_RunningInstance.FSO
+                Set FileSysObj = FSO
+            End If
+        End If
+    End Property
+    
+    Private Property Set FileSysObj(obj)
+        Set FSO_ = obj
+    End Property
+    
+    Private Property Get FileSysObj
+        Set FileSysObj = FSO_
+    End Property
+End Class
+
 
 'MsgBox "111"
 'Call ForceCreateFolder("C:\d\e\f\g\h")

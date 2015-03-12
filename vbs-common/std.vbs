@@ -322,7 +322,7 @@ Sub ForceCreateFolder(dir)
     If (Not FSO.folderExists(FSO.GetParentFolderName(dirpath))) then    
         Call ForceCreateFolder(fso.GetParentFolderName(dirpath))
     End If
-
+    
     FSO.CreateFolder(dirpath)
 End Sub
 
@@ -342,9 +342,9 @@ End Sub
 '------------------------------------------------
 ' 拷贝文件
 Sub CopyFile(SourceFile, DestinationFile)
-
+    
     Set FSO = CreateObject(COM_FSO)
-
+    
     'Check to see if the file already exists in the destination folder
     Dim wasReadOnly
     wasReadOnly = False
@@ -357,22 +357,22 @@ Sub CopyFile(SourceFile, DestinationFile)
             FSO.GetFile(DestinationFile).Attributes = FSO.GetFile(DestinationFile).Attributes - 1
             wasReadOnly = True
         End If
-
+        
         WScript.Echo "Deleting the file"
         FSO.DeleteFile DestinationFile, True
     End If
-
+    
     'Copy the file
     WScript.Echo "Copying " & SourceFile & " to " & DestinationFile
     FSO.CopyFile SourceFile, DestinationFile, True
-
+    
     If wasReadOnly Then
         'Reapply the read-only attribute
         FSO.GetFile(DestinationFile).Attributes = FSO.GetFile(DestinationFile).Attributes + 1
     End If
-
+    
     Set FSO = Nothing
-
+    
 End Sub
 
 '------------------------------------------------
@@ -501,11 +501,11 @@ End Sub
 Function ReadFile(ByVal filename)
     Dim FSO
     Set FSO = CreateObject(COM_FSO)
-   
+    
     If InStr(filename, ":\") = 0 And Left(filename, 2) <> "\\" Then 
         filename = FSO.GetSpecialFolder(0) & "\" & filename
     End If
-
+    
     On Error Resume Next
     ReadFile = FSO.OpenTextFile(filename).ReadAll
 End Function
@@ -513,14 +513,14 @@ End Function
 '------------------------------------------------
 ' 写文本文件
 Function WriteFile(ByVal filename, ByVal Contents)
-  
+    
     Dim FSO
     Set FSO = CreateObject(COM_FSO)
     
     If InStr(filename, ":\") = 0 And Left(filename, 2) <> "\\" Then 
         filename = FSO.GetSpecialFolder(0) & "\" & filename
     End If
-
+    
     Dim OutStream
     Set OutStream = FSO.OpenTextFile(filename, 2, True)
     OutStream.Write Contents
@@ -534,9 +534,9 @@ Function ReadFile2Array(ByVal filename)
     Set FSO = CreateObject(COM_FSO)
     Set file = FSO.OpenTextFile(filename, ForReading)    
     Do Until file.AtEndOfStream
-         Redim Preserve arrFileLines(i)
-         arrFileLines(i) = file.ReadLine
-         I = I + 1
+        Redim Preserve arrFileLines(i)
+        arrFileLines(i) = file.ReadLine
+        I = I + 1
     Loop    
     file.Close
     Set FSO = Nothing        
@@ -639,7 +639,7 @@ Function BytesToBstr(str, charset)
         BytesToBstr = "" 
         Exit Function 
     End If 
-
+    
     Dim adodbStream 
     Set adodbStream = CreateObject(COM_ADOSTREAM) 
     adodbStream.Type = adTypeBinary 
@@ -661,10 +661,10 @@ End Function
 '   wscript.echo GetINIString("Mail", "MAPI", "-", "win.ini")
 Sub WriteINIString(Section, KeyName, Value, FileName)
     Dim INIContents, PosSection, PosEndSection
-
- 
+    
+    
     INIContents = ReadFile(FileName)
-
+    
     'Find section
     PosSection = InStr(1, INIContents, "[" & Section & "]", vbTextCompare)
     If PosSection > 0 Then
@@ -672,16 +672,16 @@ Sub WriteINIString(Section, KeyName, Value, FileName)
         PosEndSection = InStr(PosSection, INIContents, vbCrLf & "[")
         '?Is this last section?
         If PosEndSection = 0 Then PosEndSection = Len(INIContents)+1
-
+        
         'Separate section contents
         Dim OldsContents, NewsContents, Line
         Dim sKeyName, Found
         OldsContents = Mid(INIContents, PosSection, PosEndSection - PosSection)
         OldsContents = split(OldsContents, vbCrLf)
-
+        
         'Temp variable To find a Key
         sKeyName = LCase(KeyName & "=")
-
+        
         'Enumerate section lines
         For Each Line In OldsContents
             If LCase(Left(Line, Len(sKeyName))) = sKeyName Then
@@ -690,7 +690,7 @@ Sub WriteINIString(Section, KeyName, Value, FileName)
             End If
             NewsContents = NewsContents & Line & vbCrLf
         Next
-
+        
         If isempty(Found) Then
             'key Not found - add it at the end of section
             NewsContents = NewsContents & KeyName & "=" & Value
@@ -698,17 +698,17 @@ Sub WriteINIString(Section, KeyName, Value, FileName)
             'remove last vbCrLf - the vbCrLf is at PosEndSection
             NewsContents = Left(NewsContents, Len(NewsContents) - 2)
         End If
-
+        
         'Combine pre-section, new section And post-section data.
         INIContents = Left(INIContents, PosSection-1) & _
-          NewsContents & Mid(INIContents, PosEndSection)
+        NewsContents & Mid(INIContents, PosEndSection)
     Else        'if PosSection>0 Then
         'Section Not found. Add section data at the end of file contents.
         If Right(INIContents, 2) <> vbCrLf And Len(INIContents)>0 Then 
-          INIContents = INIContents & vbCrLf 
+            INIContents = INIContents & vbCrLf 
         End If
         INIContents = INIContents & "[" & Section & "]" & vbCrLf & _
-          KeyName & "=" & Value
+        KeyName & "=" & Value
     End If      'if PosSection>0 Then
     WriteFile FileName, INIContents
 End Sub
@@ -717,10 +717,10 @@ End Sub
 ' GetINIString
 Function GetINIString(Section, KeyName, Default, FileName)
     Dim INIContents, PosSection, PosEndSection, sContents, Value, Found
-
-
+    
+    
     INIContents = ReadFile(FileName)
-
+    
     'Find section
     PosSection = InStr(1, INIContents, "[" & Section & "]", vbTextCompare)
     If PosSection > 0 Then
@@ -728,19 +728,19 @@ Function GetINIString(Section, KeyName, Default, FileName)
         PosEndSection = InStr(PosSection, INIContents, vbCrLf & "[")
         '?Is this last section?
         If PosEndSection = 0 Then PosEndSection = Len(INIContents)+1
-
+        
         'Separate section contents
         sContents = Mid(INIContents, PosSection, PosEndSection - PosSection)
-
+        
         If InStr(1, sContents, vbCrLf & KeyName & "=", vbTextCompare)>0 Then
-          Found = True
-          'Separate value of a key.
-          Value = SeparateField(sContents, vbCrLf & KeyName & "=", vbCrLf)
+            Found = True
+            'Separate value of a key.
+            Value = SeparateField(sContents, vbCrLf & KeyName & "=", vbCrLf)
         End If
     End If
-
+    
     If isempty(Found) Then Value = Default
-
+    
     GetINIString = Value
 End Function
 
@@ -788,19 +788,19 @@ End Sub
 ' 删除文件
 ' 删除.txt文件，"C:\FSO\*.txt"
 Function DeleteFiles(filename)
-
+    
     Dim FSO
     Set FSO = CreateObject(COM_FSO)
-
+    
     If FSO.FileExists(filename) Then
         FSO.DeleteFile filename, True
         DeleteFiles = True
     Else
         DeleteFiles = False
     End If
-
+    
     Set FSO = Nothing
-
+    
 End Function 
 
 '------------------------------------------------
@@ -912,9 +912,9 @@ End Function
 '------------------------------------------------
 ' 获取文件扩展名
 Function GetAnExtension(filename)
-   Dim FSO
-   Set FSO = CreateObject(COM_FSO)
-   GetAnExtension = FSO.GetExtensionName(filename)
+    Dim FSO
+    Set FSO = CreateObject(COM_FSO)
+    GetAnExtension = FSO.GetExtensionName(filename)
 End Function
 
 '------------------------------------------------
@@ -963,7 +963,7 @@ End Function
 ' 创建随机密码
 Function CreatePassword(numchar)
     Dim avail, parola, f, i
-
+    
     avail = "abcdefghijklmnopqrstuvwxyz1234567890"
     Randomize
     parola = ""
@@ -1018,13 +1018,13 @@ End Function
 ' 路径末尾添加\
 Function DisposePath(sPath)
     On Error Resume Next
-
+    
     If Right(sPath, 1) = "\" Then
         DisposePath = sPath
     Else
         DisposePath = sPath & "\"
     End If
-
+    
     DisposePath = Trim(DisposePath)
 End Function 
 
@@ -1034,7 +1034,7 @@ Function ReplaceFileContent(filepath, pattern, text, is_utf8)
     Set objFSO = CreateObject(COM_FSO)
     Set objFile = objFSO.GetFile(filepath)
     Dim objStream
-
+    
     If objFile.Size > 0 Then
         
         If is_utf8 = 1 Then			
@@ -1053,7 +1053,7 @@ Function ReplaceFileContent(filepath, pattern, text, is_utf8)
             objReadFile.Close
         End If
     End If
-
+    
     Dim re
     Set re = new RegExp
     re.IgnoreCase = False
@@ -1061,12 +1061,12 @@ Function ReplaceFileContent(filepath, pattern, text, is_utf8)
     re.MultiLine = True
     re.Pattern = pattern
     strContents = re.replace(strContents, text)
-
+    
     're.Pattern="^Public\s+Const\s+APP_VERSION.*""$"
     'strContents = re.replace(strContents,"Public Const APP_VERSION = ""Version: " & appversion & """")
-
+    
     Set re = Nothing
-
+    
     If is_utf8 = 1 Then
         Set objStream = CreateObject(COM_ADOSTREAM)
         objStream.Open
@@ -1102,7 +1102,7 @@ Function GetApplicationDataPath()
     Set folder_item = folder.Self
     GetApplicationDataPath = folder_item.Path
 End Function 
-    
+
 
 '------------------------------------------------
 ' 获取临时文件夹路径
@@ -1131,13 +1131,13 @@ End Function
 Function GetMatchText(filename, pattern)
     Dim text, re, matches, tmpstr
     text = ReadTextFile(filename, "gb2312")
-
+    
     Set re = new RegExp
     re.IgnoreCase = False
     re.Global = True
     re.MultiLine = True
     re.Pattern = pattern
-        
+    
     Set matches = re.Execute(text)
     If matches.Count > 0 Then
         For Each m In matches
@@ -1158,9 +1158,9 @@ Function GetFileLines(filename)
     Do While file.AtEndOfStream <> True
         file.SkipLine
     Loop
-
+    
     GetFileLines = file.Line
-
+    
     Set FSO = Nothing
 End Function
 
@@ -1180,23 +1180,23 @@ Sub EachFiles(dir, pattern, method)
     Set re = new RegExp
     re.Pattern    = pattern
     re.IgnoreCase = True
-
+    
     Call EachSubFolder(root, re, method)
-
+    
     Set FSO = Nothing
     Set re = Nothing
 End Sub
 
 Sub EachSubFolder(root, re, method)
     Dim subfolder, file, script
-        
+    
     For Each file In root.Files
         If re.Test(file.Name) Then
             script = "Call " & method & "(""" & file.Path & """)"
             ExecuteGlobal script
         End If
     Next
-
+    
     For Each subfolder In root.SubFolders
         Call EachSubFolder(subfolder, re, method)    
     Next
@@ -1252,17 +1252,17 @@ End Function
 '------------------------------------------------
 ' NewZip
 Sub NewZip(filename) 
-   'WScript.Echo "Newing up a zip file (" & pathToZipFile & ") "
- 
-   Dim FSO, file
-   Set FSO = CreateObject(COM_FSO)   
-   Set file = FSO.CreateTextFile(filename)
- 
-   file.Write Chr(80) & Chr(75) & Chr(5) & Chr(6) & String(18, 0) 
-   file.Close
-   Set FSO = Nothing
-   Set FSO = Nothing 
-   WScript.Sleep 500 
+    'WScript.Echo "Newing up a zip file (" & pathToZipFile & ") "
+    
+    Dim FSO, file
+    Set FSO = CreateObject(COM_FSO)   
+    Set file = FSO.CreateTextFile(filename)
+    
+    file.Write Chr(80) & Chr(75) & Chr(5) & Chr(6) & String(18, 0) 
+    file.Close
+    Set FSO = Nothing
+    Set FSO = Nothing 
+    WScript.Sleep 500 
 End Sub
 
 '------------------------------------------------
@@ -1270,42 +1270,42 @@ End Sub
 ' Example:
 '   CreateZip "results.zip", "results"
 Sub CreateZip(filename, dir) 
-   'WScript.Echo "Creating zip  (" & pathToZipFile & ") from (" & dirToZip & ")"
- 
+    'WScript.Echo "Creating zip  (" & pathToZipFile & ") from (" & dirToZip & ")"
+    
     Dim FSO
     Set FSO = CreateObject(COM_FSO)
-
+    
     filename = FSO.GetAbsolutePathName(filename)
     dir = FSO.GetAbsolutePathName(dir)
-
+    
     If FSO.FileExists(filename) Then
-       'WScript.Echo "That zip file already exists - deleting it."
-       FSO.DeleteFile filename
+        'WScript.Echo "That zip file already exists - deleting it."
+        FSO.DeleteFile filename
     End If
-
+    
     If Not FSO.FolderExists(dir) Then
-       'WScript.Echo "The directory to zip does not exist."
-       Exit Sub
+        'WScript.Echo "The directory to zip does not exist."
+        Exit Sub
     End If
-
+    
     NewZip filename
-
+    
     Dim SHELLAPP, zip, d
     Set SHELLAPP = CreateObject(COM_SHELLAPP)   
     Set zip = SHELLAPP.NameSpace(filename) 
-
+    
     'WScript.Echo "opening dir  (" & dir & ")" 
-
+    
     Set d = SHELLAPP.NameSpace(dir)
-
+    
     ' Look at http://msdn.microsoft.com/en-us/library/bb787866(VS.85).aspx
     ' for more information about the CopyHere function.
     zip.CopyHere d.items, 4
-
+    
     Do Until d.Items.Count <= zip.Items.Count
         Wscript.Sleep(200)
     Loop
- 
+    
 End Sub
 
 '------------------------------------------------
@@ -1313,36 +1313,36 @@ End Sub
 ' Example:
 '   ExtractFilesFromZip "results.zip", "."
 Sub ExtractFilesFromZip(filename, dir)
- 
+    
     Dim FSO
     Set FSO = CreateObject(COM_FSO)
- 
+    
     filename = fso.GetAbsolutePathName(filename)
     dir = fso.GetAbsolutePathName(dir)
- 
+    
     If (Not fso.FileExists(filename)) Then
         WScript.Echo "Zip file does not exist: " & filename
         Exit Sub
     End If
- 
+    
     If Not fso.FolderExists(dir) Then
         WScript.Echo "Directory does not exist: " & dir
         Exit Sub
     End If
- 
+    
     Dim SHELLAPP, zip, d
     set SHELLAPP = CreateObject("Shell.Application")   
     Set zip = SHELLAPP.NameSpace(filename)  
     Set d = SHELLAPP.NameSpace(dir)
- 
+    
     ' Look at http://msdn.microsoft.com/en-us/library/bb787866(VS.85).aspx
     ' for more information about the CopyHere function.
     d.CopyHere zip.items, 4
- 
+    
     Do Until zip.Items.Count <= d.Items.Count
         Wscript.Sleep(200)
     Loop
- 
+    
 End Sub
 
 '------------------------------------------------
@@ -1357,9 +1357,9 @@ Function ZipBy7Zip(archive_file_name, filelist)
     Dim FSO, SHELL, sWorkingDirectory
     Set FSO = CreateObject(COM_FSO)
     Set SHELL = CreateObject(COM_SHELL)   
-
+    
     sWorkingDirectory = FSO.GetParentFolderName(Wscript.ScriptFullName) 
-
+    
     '-------Ensure we can find 7za.exe------
     If FSO.FileExists(sWorkingDirectory & "\" & "7z.exe") Then
         s7zLocation = ""
@@ -1370,10 +1370,10 @@ Function ZipBy7Zip(archive_file_name, filelist)
         Exit Function
     End If
     '--------------------------------------
-
+    
     SHELL.Run """" & s7zLocation & "7z.exe"" a -tzip -y """ & archive_file_name & """ " _
     & filelist, 0, True   
-
+    
     If FSO.FileExists(archive_file_name) Then
         ZipBy7Zip = 1
     Else
@@ -1391,10 +1391,10 @@ Function UnZipBy7Zip(archive_file_name, dir)
     Dim FSO, SHELL, sWorkingDirectory
     Set FSO = CreateObject(COM_FSO)
     Set SHELL = CreateObject(COM_SHELL)   
-
+    
     sWorkingDirectory = FSO.GetParentFolderName(Wscript.ScriptFullName) 
     '--------------------------------------
-
+    
     '-------Ensure we can find 7za.exe------
     If FSO.FileExists(sWorkingDirectory & "\" & "7z.exe") Then
         s7zLocation = ""
@@ -1405,14 +1405,14 @@ Function UnZipBy7Zip(archive_file_name, dir)
         Exit Function
     End If
     '--------------------------------------
-
+    
     '-Ensure we can find archive to uncompress-
     If Not FSO.FileExists(archive_file_name) Then
         UnZipBy7Zip = "Error: File Not Found."
         Exit Function
     End If
     '--------------------------------------
-
+    
     SHELL.Run """" & s7zLocation & "7z.exe"" e -y -o""" & dir & """ """ & _
     archive_file_name & """", 0, True
     UnZipBy7Zip = 1
@@ -1612,36 +1612,36 @@ Function DecodeFilter(html, filter)
     For Each i In filter
         Select Case i
             Case "SCRIPT"   ' 去除所有客户端脚本javascipt,vbscript,jscript,js,vbs,event,...
-                html = exeRE("(javascript|jscript|vbscript|vbs):", "#", html)
-                html = exeRE("</?script[^>]*>", "", html)
-                html = exeRE("on(mouse|exit|error|click|key)", "", html)
+            html = exeRE("(javascript|jscript|vbscript|vbs):", "#", html)
+            html = exeRE("</?script[^>]*>", "", html)
+            html = exeRE("on(mouse|exit|error|click|key)", "", html)
             Case "TABLE":   ' 去除表格<table><tr><td><th>
-                html = exeRE("</?table[^>]*>", "", html)
-                html = exeRE("</?tr[^>]*>", "", html)
-                html = exeRE("</?th[^>]*>", "", html)
-                html = exeRE("</?td[^>]*>", "", html)
-                html = exeRE("</?tbody[^>]*>", "", html)
+            html = exeRE("</?table[^>]*>", "", html)
+            html = exeRE("</?tr[^>]*>", "", html)
+            html = exeRE("</?th[^>]*>", "", html)
+            html = exeRE("</?td[^>]*>", "", html)
+            html = exeRE("</?tbody[^>]*>", "", html)
             Case "CLASS"    ' 去除样式类class=""
-                html = exeRE("(<[^>]+) class=[^ |^>]*([^>]*>)", "$1 $2", html) 
+            html = exeRE("(<[^>]+) class=[^ |^>]*([^>]*>)", "$1 $2", html) 
             Case "STYLE"    ' 去除样式style=""
-                html = exeRE("(<[^>]+) style=""[^""]*""([^>]*>)", "$1 $2", html)
-                html = exeRE("(<[^>]+) style='[^']*'([^>]*>)", "$1 $2", html)
+            html = exeRE("(<[^>]+) style=""[^""]*""([^>]*>)", "$1 $2", html)
+            html = exeRE("(<[^>]+) style='[^']*'([^>]*>)", "$1 $2", html)
             Case "IMG"      ' 去除样式style=""
-                html = exeRE("</?img[^>]*>", "", html)
+            html = exeRE("</?img[^>]*>", "", html)
             Case "XML"      ' 去除XML<?xml>
-                html = exeRE("<\\?xml[^>]*>", "", html)
+            html = exeRE("<\\?xml[^>]*>", "", html)
             Case "NAMESPACE"    ' 去除命名空间<o:p></o:p>
-                html = exeRE("<\/?[a-z]+:[^>]*>", "", html)
+            html = exeRE("<\/?[a-z]+:[^>]*>", "", html)
             Case "FONT"     ' 去除字体<font></font>
-                html = exeRE("</?font[^>]*>", "", html)
+            html = exeRE("</?font[^>]*>", "", html)
             Case "MARQUEE"  ' 去除字幕<marquee></marquee>
-                html = exeRE("</?marquee[^>]*>", "", html)
+            html = exeRE("</?marquee[^>]*>", "", html)
             Case "OBJECT"   ' 去除对象<object><param><embed></object>
-                html = exeRE("</?object[^>]*>", "", html)
-                html = exeRE("</?param[^>]*>", "", html)
-                html = exeRE("</?embed[^>]*>", "", html)
+            html = exeRE("</?object[^>]*>", "", html)
+            html = exeRE("</?param[^>]*>", "", html)
+            html = exeRE("</?embed[^>]*>", "", html)
             Case "DIV"      ' 去除对象<object><param><embed></object>
-                html = exeRE("</?div([^>])*>", "$1", html)
+            html = exeRE("</?div([^>])*>", "$1", html)
         End Select
     Next
     'html = Replace(html,"<table","<")
@@ -1653,19 +1653,19 @@ End Function
 '------------------------------------------------
 ' 字符串转Unicode
 Function Chinese2Unicode(str) 
-  Dim i 
-  Dim Str_one 
-  Dim Str_unicode 
-  For i = 1 To Len(str) 
-    Str_one = Mid(str, i, 1) 
-    Str_unicode = Str_unicode & chr(38) 
-    Str_unicode = Str_unicode & chr(35) 
-    Str_unicode = Str_unicode & chr(120) 
-    Str_unicode = Str_unicode & Hex(ascw(Str_one)) 
-    Str_unicode = Str_unicode & chr(59) 
-  Next 
-
-  str = Str_unicode
+    Dim i 
+    Dim Str_one 
+    Dim Str_unicode 
+    For i = 1 To Len(str) 
+        Str_one = Mid(str, i, 1) 
+        Str_unicode = Str_unicode & chr(38) 
+        Str_unicode = Str_unicode & chr(35) 
+        Str_unicode = Str_unicode & chr(120) 
+        Str_unicode = Str_unicode & Hex(ascw(Str_one)) 
+        Str_unicode = Str_unicode & chr(59) 
+    Next 
+    
+    str = Str_unicode
 End Function
 
 '------------------------------------------------
@@ -1746,44 +1746,44 @@ Function DateToStr(DateTime, ShowType)
     If Len(DateDay) < 2 Then DateDay = "0" & DateDay
     Select Case ShowType
         Case "Y-m"
-            DateToStr = Year(DateTime) & "-" & Month(DateTime)
+        DateToStr = Year(DateTime) & "-" & Month(DateTime)
         Case "Y-m-d"
-            DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay
+        DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay
         Case "Y-m-d H:I A"
-            Dim DateAMPM
-            If DateHour > 12 Then
-                DateHour = DateHour - 12
-                DateAMPM = "PM"
-            Else
-                DateHour = DateHour
-                DateAMPM = "AM"
-            End If
-            If Len(DateHour) < 2 Then DateHour = "0" & DateHour
-            If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
-            DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay & " " & DateHour & ":" & DateMinute & " " & DateAMPM
+        Dim DateAMPM
+        If DateHour > 12 Then
+            DateHour = DateHour - 12
+            DateAMPM = "PM"
+        Else
+            DateHour = DateHour
+            DateAMPM = "AM"
+        End If
+        If Len(DateHour) < 2 Then DateHour = "0" & DateHour
+        If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
+        DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay & " " & DateHour & ":" & DateMinute & " " & DateAMPM
         Case "Y-m-d H:I:S"
-            Dim DateSecond
-            DateSecond = Second(DateTime)
-            If Len(DateHour) < 2 Then DateHour = "0" & DateHour
-            If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
-            If Len(DateSecond) < 2 Then DateSecond = "0" & DateSecond
-            DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay & " " & DateHour & ":" & DateMinute & ":" & DateSecond
+        Dim DateSecond
+        DateSecond = Second(DateTime)
+        If Len(DateHour) < 2 Then DateHour = "0" & DateHour
+        If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
+        If Len(DateSecond) < 2 Then DateSecond = "0" & DateSecond
+        DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay & " " & DateHour & ":" & DateMinute & ":" & DateSecond
         Case "YmdHIS"
-            DateSecond = Second(DateTime)
-            If Len(DateHour) < 2 Then DateHour = "0" & DateHour
-            If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
-            If Len(DateSecond) < 2 Then DateSecond = "0" & DateSecond
-            DateToStr = Year(DateTime) & DateMonth & DateDay & DateHour & DateMinute & DateSecond
+        DateSecond = Second(DateTime)
+        If Len(DateHour) < 2 Then DateHour = "0" & DateHour
+        If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
+        If Len(DateSecond) < 2 Then DateSecond = "0" & DateSecond
+        DateToStr = Year(DateTime) & DateMonth & DateDay & DateHour & DateMinute & DateSecond
         Case "Ymd"			
-            DateToStr = Year(DateTime) & DateMonth & DateDay 
+        DateToStr = Year(DateTime) & DateMonth & DateDay 
         Case "ym"
-            DateToStr = Right(Year(DateTime), 2) & DateMonth
+        DateToStr = Right(Year(DateTime), 2) & DateMonth
         Case "d"
-            DateToStr = DateDay
+        DateToStr = DateDay
         Case Else
-            If Len(DateHour) < 2 Then DateHour = "0" & DateHour
-            If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
-            DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay & " " & DateHour & ":" & DateMinute
+        If Len(DateHour) < 2 Then DateHour = "0" & DateHour
+        If Len(DateMinute) < 2 Then DateMinute = "0" & DateMinute
+        DateToStr = Year(DateTime) & "-" & DateMonth & "-" & DateDay & " " & DateHour & ":" & DateMinute
     End Select
 End Function
 
@@ -1793,13 +1793,13 @@ End Function
 ' 根据年份及月份得到每月的总天数
 Function GetDaysInMonth(iMonth, iYear) 
     Select Case iMonth 
-    Case 1, 3, 5, 7, 8, 10, 12 
+        Case 1, 3, 5, 7, 8, 10, 12 
         GetDaysInMonth = 31 
-    Case 4, 6, 9, 11 
+        Case 4, 6, 9, 11 
         GetDaysInMonth = 30 
-    Case 2 
+        Case 2 
         If IsDate("February 29, " & iYear) Then 
-         GetDaysInMonth = 29 
+            GetDaysInMonth = 29 
         Else 
             GetDaysInMonth = 28 
         End If 
@@ -1833,7 +1833,7 @@ Function Date2Chinese(iDate)
     Dim iYear
     Dim iMonth
     Dim iDay
-
+    
     num(0) = "〇"
     num(1) = "一"
     num(2) = "二"
@@ -1844,12 +1844,12 @@ Function Date2Chinese(iDate)
     num(7) = "七"
     num(8) = "八"
     num(9) = "九"
-
+    
     iYear = Year(iDate)
     iMonth = Month(iDate)
     iDay = Day(iDate)
     Date2Chinese = (num(iYear \ 1000) + num((iYear \ 100) Mod 10) + num((iYear\ 10) Mod 10) + num(iYear Mod 10)) & "年"
-
+    
     If iMonth >= 10 Then
         If iMonth = 10 Then
             Date2Chinese = Date2Chinese & "十" & "月"
@@ -1859,7 +1859,7 @@ Function Date2Chinese(iDate)
     Else
         Date2Chinese = Date2Chinese & num(iMonth Mod 10) & "月"
     End If
-
+    
     If iDay >= 10 Then
         If iDay = 10 Then
             Date2Chinese = Date2Chinese & "十" & "日"
@@ -1873,7 +1873,7 @@ Function Date2Chinese(iDate)
     Else
         Date2Chinese = Date2Chinese & num(iDay Mod 10) & "日"
     End If
-
+    
 End Function
 
 '------------------------------------------------
@@ -1883,7 +1883,7 @@ Function Date2ChineseRSS(iDate)
     Dim iYear
     Dim iMonth
     Dim iDay
-
+    
     num(0) = "〇"
     num(1) = "一"
     num(2) = "二"
@@ -1894,12 +1894,12 @@ Function Date2ChineseRSS(iDate)
     num(7) = "七"
     num(8) = "八"
     num(9) = "九"
-
+    
     iYear = Year(iDate)
     iMonth = Month(iDate)
     iDay = Day(iDate)
     Date2ChineseRSS = iYear & "年"
-
+    
     If iMonth >= 10 Then
         If iMonth = 10 Then
             Date2ChineseRSS = Date2ChineseRSS & "十" & "月"
@@ -1909,7 +1909,7 @@ Function Date2ChineseRSS(iDate)
     Else
         Date2ChineseRSS = Date2ChineseRSS & num(iMonth Mod 10) & "月"
     End If
-
+    
 End Function
 
 
@@ -1919,17 +1919,17 @@ End Function
 ' OUT : (datetime) : destination
 Function StringToDate(strDate)
     Dim dDate, sDate
-
+    
     sDate = Trim(strDate)
     Select Case Len(sDate)
         Case 17
-            dDate = DateSerial(Left(sDate, 4), Mid(sDate, 5, 2), Mid(sDate, 7, 2)) + TimeSerial(Mid(sDate, 10, 2), Mid(sDate, 13, 2), Mid(sDate, 16, 2))
+        dDate = DateSerial(Left(sDate, 4), Mid(sDate, 5, 2), Mid(sDate, 7, 2)) + TimeSerial(Mid(sDate, 10, 2), Mid(sDate, 13, 2), Mid(sDate, 16, 2))
         Case 8
-            dDate = DateSerial(Left(sDate, 4), Mid(sDate, 5, 2), Mid(sDate, 7, 2))
+        dDate = DateSerial(Left(sDate, 4), Mid(sDate, 5, 2), Mid(sDate, 7, 2))
         Case Else
-            If isDate(sDate) Then
-                dDate = CDate(sDate)
-            End If
+        If isDate(sDate) Then
+            dDate = CDate(sDate)
+        End If
     End Select
     StringToDate = dDate
 End Function
@@ -2049,29 +2049,150 @@ Sub KillProcess(name)
     Next
 End Sub
 
+'------------------------------------------------
+' 删除注册表键
+Sub RegDelete(fullkey)
+    Set objShell = CreateObject(COM_SHELL)
+    objShell.RegDelete fullkey
+End Sub
+
+'------------------------------------------------
+' 删除注册表键
+Sub RegDeleteKey(rootkey, key)
+    Dim computer   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv")
+         
+    oReg.DeleteKey rootkey, key
+End Sub 
+
+'------------------------------------------------
+' 删除注册表键值
+Sub RegDeleteValue(rootkey, key, name)
+    Dim computer   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+    oReg.DeleteValue rootkey, key, name
+End Sub
+
+
+'------------------------------------------------
+' 写注册表MultiString值
+Sub RegWriteMultiStringValue(rootkey, key, name, ByRef values)
+    Dim computer   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv")
+         
+    oReg.SetMultiStringValue rootkey, key, name, values
+End Sub
+
+'------------------------------------------------
+' 读注册表MultiString值
+Function RegReadMultiString(rootkey, key, name)
+    Dim computer, arrValues   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+
+    oReg.GetMultiStringValue rootkey, key, name, arrValues
+    RegReadMultiString = arrValues
+End Function
+
+'------------------------------------------------
+' 写注册表String值
+Sub RegWriteStringValue(rootkey, key, name, value)
+    Dim computer   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+
+    oReg.SetStringValue rootkey, key, name, value
+End Sub
+
+'------------------------------------------------
+' 读注册表String值
+Function RegReadStringValue(rootkey, key, name)
+    Dim computer, value   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+
+    oReg.GetStringValue rootkey, key, name, value
+    RegReadStringValue = value
+End Function
+
+'------------------------------------------------
+' 写注册表DWORD值
+Sub RegWriteDWORDValue(rootkey, key, name, value)
+    Dim computer   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+
+    oReg.SetDWORDValue rootkey, key, name, value
+End Sub
+
+'------------------------------------------------
+' 读注册表DWORD值
+Function RegReadDWORDValue(rootkey, key, name)
+    Dim computer, value   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+
+    oReg.GetDWORDValue rootkey, key, name, value
+    RegReadDWORDValue = value
+End Function
+
+
+'------------------------------------------------
+' 枚举注册表键
+Function RegEnumKeys(rootkey, key)
+    Dim computer, arrSubKeys   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv") 
+    oReg.EnumKey rootkey, key, arrSubKeys 
+    RegEnumKeys = arrSubKeys
+End Function
+
+'------------------------------------------------
+' 枚举注册表值
+Function RegEnumValues(rootkey, key, ByRef arrValueTypes)
+    Dim computer, arrValueNames   
+    computer = "."     
+    Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & _ 
+        computer & "\root\default:StdRegProv")
+    oReg.EnumValues rootkey, key, arrValueNames, arrValueTypes
+    RegEnumValues = arrValueNames
+End Function
+
 
 '------------------------------------------------
 ' Doc2PDF
 ' Example:
 '   Doc2PDF "C:\Documents and Settings\MyUserID\My Documents\resume.doc"
 Sub Doc2PDF( myFile )
-' This subroutine opens a Word document, then saves it as PDF, and closes Word.
-' If the PDF file exists, it is overwritten.
-' If Word was already active, the subroutine will leave the other document(s)
-' alone and close only its "own" document.
-'
-' Requirements:
-' This script requires the "Microsoft Save as PDF or XPS Add-in for 2007
-' Microsoft Office programs", available at:
-' http://www.microsoft.com/downloads/details.aspx?
-'        familyid=4D951911-3E7E-4AE6-B059-A2E79ED87041&displaylang=en
-'
-' Written by Rob van der Woude
-' http://www.robvanderwoude.com
- 
+    ' This subroutine opens a Word document, then saves it as PDF, and closes Word.
+    ' If the PDF file exists, it is overwritten.
+    ' If Word was already active, the subroutine will leave the other document(s)
+    ' alone and close only its "own" document.
+    '
+    ' Requirements:
+    ' This script requires the "Microsoft Save as PDF or XPS Add-in for 2007
+    ' Microsoft Office programs", available at:
+    ' http://www.microsoft.com/downloads/details.aspx?
+    '        familyid=4D951911-3E7E-4AE6-B059-A2E79ED87041&displaylang=en
+    '
+    ' Written by Rob van der Woude
+    ' http://www.robvanderwoude.com
+    
     ' Standard housekeeping
     Dim objDoc, objFile, objFSO, objWord, strFile, strPDF
-
+    
     Const wdFormatDocument                    =  0
     Const wdFormatDocument97                  =  0
     Const wdFormatDocumentDefault             = 16
@@ -2098,17 +2219,17 @@ Sub Doc2PDF( myFile )
     Const wdFormatXMLTemplate                 = 14
     Const wdFormatXMLTemplateMacroEnabled     = 15
     Const wdFormatXPS                         = 18
-
+    
     ' Create a File System object
     Set objFSO = CreateObject( "Scripting.FileSystemObject" )
-
+    
     ' Create a Word object
     Set objWord = CreateObject( "Word.Application" )
-
+    
     With objWord
         ' True: make Word visible; False: invisible
         .Visible = True
-
+        
         ' Check if the Word document exists
         If objFSO.FileExists( myFile ) Then
             Set objFile = objFSO.GetFile( myFile )
@@ -2119,23 +2240,23 @@ Sub Doc2PDF( myFile )
             .Quit
             Exit Sub
         End If
-
+        
         ' Build the fully qualified HTML file name
         strPDF = objFSO.BuildPath( objFile.ParentFolder, _
-                 objFSO.GetBaseName( objFile ) & ".pdf" )
-
+        objFSO.GetBaseName( objFile ) & ".pdf" )
+        
         ' Open the Word document
         .Documents.Open strFile
-
+        
         ' Make the opened file the active document
         Set objDoc = .ActiveDocument
-
+        
         ' Save as HTML
         objDoc.SaveAs strPDF, wdFormatPDF
-
+        
         ' Close the active document
         objDoc.Close
-
+        
         ' Close Word
         .Quit
     End With
@@ -2146,25 +2267,25 @@ End Sub
 
 Class ObjectList
     Public List
-
+    
     Sub Class_Initialize()
         Set List = CreateObject(COM_DICT)
     End Sub
-
+    
     Sub Class_Terminate()
         Set List = Nothing
     End Sub
-
+    
     Function Append(Anything) 
         List.Add CStr(List.Count + 1), Anything 
         Set Append = Anything
     End Function
-
+    
     Function Item(id) 
         If List.Exists(CStr(id)) Then
-          Set Item = List(CStr(id))
+            Set Item = List(CStr(id))
         Else
-          Set Item = Nothing
+            Set Item = Nothing
         End If
     End Function
 End Class
@@ -2185,7 +2306,7 @@ Class XMLUpload
     Private objTemp
     Private adTypeBinary, adTypeText
     Private strCharset, strBoundary
-
+    
     Private Sub Class_Initialize()
         adTypeBinary = 1
         adTypeText = 2
@@ -2196,13 +2317,13 @@ Class XMLUpload
         strCharset = "utf-8"
         strBoundary = GetBoundary()
     End Sub
-
+    
     Private Sub Class_Terminate()
         objTemp.Close
         Set objTemp = Nothing
         Set xmlHttp = Nothing
     End Sub
-
+    
     '指定字符集的字符串转字节数组
     Public Function StringToBytes(ByVal strData, ByVal strCharset)
         Dim objFile
@@ -2222,7 +2343,7 @@ Class XMLUpload
         objFile.Close
         Set objFile = Nothing
     End Function
-
+    
     '获取文件内容的字节数组
     Private Function GetFileBinary(ByVal strPath)
         Dim objFile
@@ -2234,7 +2355,7 @@ Class XMLUpload
         objFile.Close
         Set objFile = Nothing
     End Function
-
+    
     '获取自定义的表单数据分界线
     Private Function GetBoundary()
         Dim ret(12)
@@ -2247,12 +2368,12 @@ Class XMLUpload
         Next
         GetBoundary = "---------------------------" & Join(ret, Empty)
     End Function 
-
+    
     '设置上传使用的字符集
     Public Property Let Charset(ByVal strValue)
-        strCharset = strValue
+    strCharset = strValue
     End Property
-
+    
     '添加文本域的名称和值
     Public Sub AddForm(ByVal strName, ByVal strValue)
         Dim tmp
@@ -2263,7 +2384,7 @@ Class XMLUpload
         tmp = Replace(tmp, "$3", strValue)
         objTemp.Write StringToBytes(tmp, strCharset)
     End Sub
-
+    
     '设置文件域的名称/文件名称/文件MIME类型/文件路径或文件字节数组
     Public Sub AddFile(ByVal strName, ByVal strFileName, ByVal strFileType, ByVal strFilePath)
         Dim tmp
@@ -2276,7 +2397,7 @@ Class XMLUpload
         objTemp.Write StringToBytes(tmp, strCharset)
         objTemp.Write GetFileBinary(strFilePath)
     End Sub
-
+    
     '设置multipart/form-data结束标记
     Private Sub AddEnd()
         Dim tmp
@@ -2286,7 +2407,7 @@ Class XMLUpload
         objTemp.Write StringToBytes(tmp, strCharset)
         objTemp.Position = 2
     End Sub
-
+    
     '上传到指定的URL，并返回服务器应答
     Public Function Upload(ByVal strURL)
         Call AddEnd
@@ -2304,31 +2425,31 @@ Class StringBuilder
     Private strArray()
     Private intGrowRate
     Private intItemCount
-
+    
     Private Sub Class_Initialize()
         intGrowRate = 50
         intItemCount = 0
     End Sub
-
+    
     Public Property Get GrowRate
-        GrowRate = intGrowRate
+    GrowRate = intGrowRate
     End Property
-
+    
     Public Property Let GrowRate(value)
-        intGrowRate = value
+    intGrowRate = value
     End Property
-
+    
     Private Sub InitArray()
         Redim Preserve strArray(intGrowRate)
     End Sub
-
+    
     Public Sub Clear()
         intItemCount = 0
         Erase strArray
     End Sub
-
+    
     Public Sub Append(str)
-            
+        
         If intItemCount = 0 Then
             Call InitArray
         ElseIf intItemCount > UBound(strArray) Then
@@ -2338,9 +2459,9 @@ Class StringBuilder
         strArray(intItemCount) = str
         
         intItemCount = intItemCount + 1
-
+        
     End Sub
-
+    
     Public Function FindString(str)
         Dim x,mx
         mx = intItemCount - 1
@@ -2352,7 +2473,7 @@ Class StringBuilder
         Next
         FindString = -1
     End Function
-
+    
     Public Function ToString2(sep)
         If intItemCount = 0 Then
             ToString2 = ""
@@ -2361,13 +2482,13 @@ Class StringBuilder
             ToString2 = Join(strArray,sep)
         End If
     End Function
-        
+    
     Public Default Function ToString()
-        If intItemCount = 0 Then
-            ToString = ""
-        Else
-            ToString = Join(strArray,"")
-        End If
+    If intItemCount = 0 Then
+        ToString = ""
+    Else
+        ToString = Join(strArray,"")
+    End If
     End Function
 
 End Class

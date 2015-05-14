@@ -1,0 +1,1 @@
+cscript.exe vc2005-export.vbs "E:\mydrivers-work\ksafe_softmgr_lenovo_fb\src\src_cloud\cloudlib\cloudlib.vcproj" "E:\222\src\cloudlib\"

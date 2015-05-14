@@ -163,7 +163,7 @@ Function has_file(filename, ByRef root, ByRef filename2)
         Echo dir
         fullpath = repace_file_path(dir & filename2)        
         If (Not Dict.Exists(fullpath)) and FileExists(fullpath) Then
-            Dict.Add fullpath, fullpath            
+            'Dict.Add fullpath, fullpath            
             filename2 = fullpath
             retval = True
             Exit For
